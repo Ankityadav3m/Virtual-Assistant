@@ -1,0 +1,96 @@
+#!C:\Users\Siddhant\PycharmProjects\Voice_Assistant\venv\Scripts\python.exe
+#coding=utf8
+import datetime,os,re,sys
+from prettytable import PrettyTable
+
+filePath = os.getenv("HOME") + "/.days"
+if not os.path.exists(filePath):
+    os.system("touch ~/.days")
+
+def calculate():
+    items = []
+    with open(filePath) as f:
+        for line in f.readlines():
+             items.append(line.strip().split(",")[:2])
+    for item in items:
+        remind(item)
+
+def remind(item):
+    day = datetime.datetime.strptime(item[1],"%Y-%m-%d")
+    today = datetime.datetime.now()
+    d = (today-day).days
+    if (d%100 == 0):
+        print "{} in {}, it's {} days ago".format(item[0],item[1], d)
+    if (day.day == today.day and day.month == today.month):
+        print "{} in {}, it's an anniversary".format(item[0],item[1])
+
+
+
+def listDays():
+    tbl = PrettyTable(['no','item','date'])
+    with open(filePath) as f:
+        for i,line in enumerate(f.readlines()):
+            tbl.add_row([i+1]+line.strip().split(",")[:2])
+    print tbl
+
+def echoHelp():
+    print "today                      check whether today is a special day?"
+    print "today a/add                add a day you want to remember"
+    print "today r/rm/remove          forget a day"
+    print "today l/list               list all days you want to remember"
+    print "today h/help               list the usage of this software"
+
+def addDay():
+    print "The thing you want to remember"
+    item = raw_input()
+    while not item.strip():
+        print "The thing should not be empty"
+        item = raw_input()
+    print "please input the date(xxxx-xx-xx)"
+    day = raw_input()
+    m = re.match(r'^(\d{4})-(\d{2})-(\d{2}$)',day)
+    while not m:
+        print "the date should match pattern (xxxx-xx-xx)"
+        day = raw_input()
+        m = re.match(r'^(\d{4})-(\d{2})-(\d{2}$)',day)
+    try:
+        dt = datetime.datetime(int(m.groups()[0]),int(m.groups()[1]),int(m.groups()[2]))
+    except ValueError as e:
+        print e
+        print "the date is invalid, so you can't create that day for memory"
+        return
+
+    with open(filePath,'a+') as f:
+        f.write("{},{}\n".format(item,day))
+    print "created successfully"
+
+def removeDay():
+    print "The number of the thing you want to forget"
+    item = raw_input()
+    print "repeat to confirm"
+    item2 = raw_input()
+    if item == item2 and item.isdigit():
+        os.system("sed -id '{}d' {}".format(item,filePath))
+        print "deleted successfully"
+        return
+    print "it's not a number can't delete it"
+
+if len(sys.argv) == 1:
+    "you can use today help to check the usage"
+    calculate()
+    exit()
+if len(sys.argv) == 2:
+    if sys.argv[1] in ['l','list']:
+        listDays()
+        exit()
+    if sys.argv[1] in ['h','help']:
+        echoHelp()
+        exit()
+    if sys.argv[1] in ['a','add']:
+        addDay()
+        exit()
+    if sys.argv[1] in ['r','rm','remove']:
+        removeDay()
+        exit()
+
+echoHelp()
